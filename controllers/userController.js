@@ -24,6 +24,23 @@ export const getUserData = async (req, res)=>{
     }
 }
 
+export const getEmailByRole = async (req, res) => {
+  const role = req.query.role;
+
+  try {
+    if (!role) {
+      return res.json({ success: false, message: 'Role parameter is required' });
+    }
+
+    const users = await userModel.find({ role }).select('email');
+
+    return res.json({ success: true, users });
+  } catch (error) {
+    return res.json({ success: false, message: error.message });
+  }
+};
+
+
 export const updateProfile = async (req, res) => {
   const { name, avatar } = req.body;
   const userId = req.userId;
