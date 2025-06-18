@@ -11,7 +11,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 connectDB();
 
-const allowedOrigins = ['https://techwithbrands.com/'];
+const allowedOrigins = ['https://techwithbrands.com'];
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
