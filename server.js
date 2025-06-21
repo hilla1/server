@@ -6,12 +6,13 @@ import connectDB from "./config/mongodb.js";
 import authRouter from "./routes/authRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import consultationRouter from "./routes/consultationRoutes.js";
+import paypalRouter from "./routes/paypalRoutes.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
 connectDB();
 
-const allowedOrigins = ['https://techwithbrands.com'];
+const allowedOrigins = ['http://localhost:5173'];
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -21,6 +22,7 @@ app.use(cors({origin:allowedOrigins, credentials:true}));
 // Api Endpoints
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
-app.use('/api/consultation', consultationRouter);
+app.use('/api/consultation', consultationRouter);        
+app.use('/api/paypal', paypalRouter);
 
 app.listen(port, ()=> console.log(`Server running on port:${port}`));
