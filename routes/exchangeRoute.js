@@ -11,7 +11,6 @@ exchangeRouter.get("/usd-to-kes", async (req, res) => {
 
     const rate = data?.rates?.KES;
     if (rate && !isNaN(rate)) {
-      console.log(`✅ open.er-api.com: 1 USD = ${rate} KES`);
       return res.json({ success: true, rate });
     }
 
