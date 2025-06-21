@@ -2,52 +2,53 @@ import mongoose from "mongoose";
 
 const mpesaTransactionSchema = new mongoose.Schema(
   {
-    phone: { 
-      type: String, 
-      required: true 
+    phone: {
+      type: String,
+      required: true,
     },
-    amount: { 
-      type: Number, 
-      required: true 
+    amount: {
+      type: Number,
+      required: true,
     },
-    checkoutRequestID: { 
-      type: String, 
-      required: true, 
+    checkoutRequestID: {
+      type: String,
+      required: true,
       unique: true,
-      index: true  // This creates the index automatically
+      index: true,
     },
-    merchantRequestID: { 
-      type: String 
+    merchantRequestID: {
+      type: String,
     },
-    mpesaReceiptNumber: { 
-      type: String 
+    mpesaReceiptNumber: {
+      type: String,
     },
-    transactionDate: { 
-      type: String 
+    transactionDate: {
+      type: String,
     },
-    status: { 
-      type: String, 
-      enum: ["Pending", "Completed", "Failed", "Cancelled"],
-      default: "Pending"
+    status: {
+      type: String,
+      enum: ["Pending", "Completed", "Failed", "Cancelled", "Insufficient", "Timeout"],
+      default: "Pending",
     },
-    resultCode: { 
-      type: String 
+    resultCode: {
+      type: Number, // changed from String to Number
     },
-    resultDesc: { 
-      type: String 
+    resultDesc: {
+      type: String,
     },
-    callbackMetadata: { 
-      type: mongoose.Schema.Types.Mixed 
+    callbackMetadata: {
+      type: mongoose.Schema.Types.Mixed,
     },
-    rawCallback: { 
-      type: mongoose.Schema.Types.Mixed 
+    rawCallback: {
+      type: mongoose.Schema.Types.Mixed,
     },
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true,
   }
 );
 
+// Indexes
 mpesaTransactionSchema.index({ phone: 1 });
 mpesaTransactionSchema.index({ status: 1 });
 mpesaTransactionSchema.index({ createdAt: 1 });
