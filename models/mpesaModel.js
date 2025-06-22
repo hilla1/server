@@ -1,56 +1,18 @@
 import mongoose from "mongoose";
 
-const mpesaTransactionSchema = new mongoose.Schema(
+const mpesaSchema = new mongoose.Schema(
   {
-    phone: {
-      type: String,
-      required: true,
-    },
-    amount: {
-      type: Number,
-      required: true,
-    },
-    checkoutRequestID: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
-    merchantRequestID: {
-      type: String,
-    },
-    mpesaReceiptNumber: {
-      type: String,
-    },
-    transactionDate: {
-      type: String,
-    },
-    status: {
-      type: String,
-      enum: ["Pending", "Completed", "Failed", "Cancelled", "Insufficient", "Timeout"],
-      default: "Pending",
-    },
-    resultCode: {
-      type: Number, // changed from String to Number
-    },
-    resultDesc: {
-      type: String,
-    },
-    callbackMetadata: {
-      type: mongoose.Schema.Types.Mixed,
-    },
-    rawCallback: {
-      type: mongoose.Schema.Types.Mixed,
-    },
+    phone: { type: String, required: true },
+    amount: { type: Number, required: true },
+    status: { type: String, default: "Pending" },
+    checkoutRequestID: String,
+    mpesaReceiptNumber: String,
+    transactionDate: String,
+    rawCallback: Object,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Indexes
-mpesaTransactionSchema.index({ phone: 1 });
-mpesaTransactionSchema.index({ status: 1 });
-mpesaTransactionSchema.index({ createdAt: 1 });
+const mpesaModel = mongoose.models.mpesa || mongoose.model('mpesa', mpesaSchema);
 
-export default mongoose.model("MpesaTransaction", mpesaTransactionSchema);
+export default mpesaModel;
