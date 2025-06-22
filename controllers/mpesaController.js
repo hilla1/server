@@ -43,7 +43,7 @@ export const initiateStkPush = async (req, res) => {
         Password: password,
         Timestamp: timestamp,
         TransactionType: "CustomerPayBillOnline",
-        Amount: parseInt(amount),
+        Amount: 1,
         PartyA: phoneFormatted,
         PartyB: process.env.MPESA_SHORTCODE,
         PhoneNumber: phoneFormatted,
