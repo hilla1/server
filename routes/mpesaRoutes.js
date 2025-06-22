@@ -1,9 +1,10 @@
 import express from "express";
-import { initiateStkPush, mpesaCallback } from "../controllers/mpesaController.js";
+import { checkTransactionStatus, initiateStkPush, mpesaCallback } from "../controllers/mpesaController.js";
 
 const mpesaRouter = express.Router();
 
 mpesaRouter.post("/stk-push", initiateStkPush);
 mpesaRouter.post("/callback", mpesaCallback);
+mpesaRouter.get('/transaction-status', checkTransactionStatus);
 
 export default mpesaRouter;
