@@ -2,23 +2,25 @@ import axios from "axios";
 import moment from "moment";
 import MpesaTransaction from "../models/mpesaModel.js";
 
-// Get M-Pesa Access Token
+// Utility: Get M-Pesa Access Token
 const getMpesaToken = async () => {
   const auth = Buffer.from(
     `${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`
   ).toString("base64");
 
-  const res = await axios.get(`${process.env.MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`, {
-    headers: { Authorization: `Basic ${auth}` },
-  });
+  const res = await axios.get(
+    `${process.env.MPESA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`,
+    { headers: { Authorization: `Basic ${auth}` } }
+  );
 
   return res.data.access_token;
 };
 
-// Query Safaricom for real-time status
+// Utility: Query M-Pesa transaction status
 const queryMpesaTransactionStatus = async (checkoutRequestID) => {
   const accessToken = await getMpesaToken();
   const timestamp = moment().format("YYYYMMDDHHmmss");
+
   const password = Buffer.from(
     `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
   ).toString("base64");
@@ -31,37 +33,35 @@ const queryMpesaTransactionStatus = async (checkoutRequestID) => {
       Timestamp: timestamp,
       CheckoutRequestID: checkoutRequestID,
     },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
 
   return response.data;
 };
 
-// STK PUSH initiation with amount
+// Controller: Initiate STK Push
 export const initiateStkPush = async (req, res) => {
   const { phone, amount = 1 } = req.body;
 
   if (!phone || !amount) {
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({
+      success: false,
       message: "Phone and amount required.",
-      details: { received: req.body }
+      details: { received: req.body },
     });
   }
 
   try {
     const accessToken = await getMpesaToken();
-
     const timestamp = moment().format("YYYYMMDDHHmmss");
+
     const password = Buffer.from(
       `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
     ).toString("base64");
 
-    const phoneFormatted = phone.startsWith("254") ? phone : phone.replace(/^0/, "254");
+    const phoneFormatted = phone.startsWith("254")
+      ? phone
+      : phone.replace(/^0/, "254");
 
     const response = await axios.post(
       `${process.env.MPESA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
@@ -78,63 +78,60 @@ export const initiateStkPush = async (req, res) => {
         AccountReference: "Tech with Brands",
         TransactionDesc: "Plan Subscription Payment",
       },
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
+      { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
-    // Save transaction
     const transaction = await MpesaTransaction.create({
       phone,
       amount,
       checkoutRequestID: response.data.CheckoutRequestID,
       requestPayload: req.body,
       mpesaResponse: response.data,
-      status: "Pending"
+      status: "Pending",
     });
 
     return res.json({
       success: true,
       message: "STK push sent. Complete the payment on your phone.",
       data: response.data,
-      transactionId: transaction._id
+      transactionId: transaction._id,
     });
   } catch (err) {
     console.error("M-Pesa Error:", err.response?.data || err.message);
     return res.status(500).json({
       success: false,
-      message: err.response?.data?.errorMessage || "M-Pesa payment initiation failed.",
+      message:
+        err.response?.data?.errorMessage || "M-Pesa payment initiation failed.",
       errorDetails: err.response?.data || err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
   }
 };
 
-// M-Pesa callback endpoint
+// Controller: Handle M-Pesa Callback
 export const mpesaCallback = async (req, res) => {
   try {
     console.log("Received M-Pesa callback:", JSON.stringify(req.body, null, 2));
 
     const callback = req.body?.Body?.stkCallback;
-    if (!callback) {
-      console.error("Invalid callback structure");
-      return res.sendStatus(200);
-    }
+    if (!callback) return res.sendStatus(200);
 
-    const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callback;
-    
-    if (!CheckoutRequestID) {
-      console.error("Missing CheckoutRequestID in callback");
-      return res.sendStatus(200);
-    }
+    const {
+      CheckoutRequestID,
+      ResultCode,
+      ResultDesc,
+      CallbackMetadata,
+    } = callback;
 
-    const transaction = await MpesaTransaction.findOne({ checkoutRequestID: CheckoutRequestID });
-    if (!transaction) {
-      console.error(`Transaction not found for CheckoutRequestID: ${CheckoutRequestID}`);
-      return res.sendStatus(200);
-    }
+    if (!CheckoutRequestID) return res.sendStatus(200);
 
-    // Update transaction status
+    const transaction = await MpesaTransaction.findOne({
+      checkoutRequestID: CheckoutRequestID,
+    });
+
+    if (!transaction) return res.sendStatus(200);
+
+    // Update transaction details
     transaction.status = ResultCode === 0 ? "Completed" : "Failed";
     transaction.resultCode = ResultCode;
     transaction.resultDescription = ResultDesc;
@@ -143,43 +140,56 @@ export const mpesaCallback = async (req, res) => {
 
     if (ResultCode === 0 && CallbackMetadata?.Item) {
       const items = CallbackMetadata.Item;
-      transaction.mpesaReceiptNumber = items.find((i) => i.Name === "MpesaReceiptNumber")?.Value;
-      transaction.transactionDate = items.find((i) => i.Name === "TransactionDate")?.Value;
+      transaction.mpesaReceiptNumber = items.find(
+        (i) => i.Name === "MpesaReceiptNumber"
+      )?.Value;
+      transaction.transactionDate = items.find(
+        (i) => i.Name === "TransactionDate"
+      )?.Value;
       transaction.amountPaid = items.find((i) => i.Name === "Amount")?.Value;
-      transaction.payerPhoneNumber = items.find((i) => i.Name === "PhoneNumber")?.Value;
+      transaction.payerPhoneNumber = items.find(
+        (i) => i.Name === "PhoneNumber"
+      )?.Value;
     }
 
     await transaction.save();
-    console.log(`Transaction ${CheckoutRequestID} updated with status: ${transaction.status}`);
+    console.log(
+      `Transaction ${CheckoutRequestID} updated with status: ${transaction.status}`
+    );
+
+    // Emit to WebSocket room using Socket.IO
+    const io = req.app.get("io"); // ← get io instance from app
+    io.to(CheckoutRequestID).emit("mpesa:statusUpdate", {
+      checkoutRequestID: CheckoutRequestID,
+      status: transaction.status,
+      resultCode: transaction.resultCode,
+      resultDescription: transaction.resultDescription,
+      amount: transaction.amountPaid || transaction.amount,
+      phone: transaction.payerPhoneNumber || transaction.phone,
+      mpesaReceiptNumber: transaction.mpesaReceiptNumber || null,
+      rawData: req.body,
+    });
+
   } catch (error) {
-    console.error("M-Pesa Callback Processing Error:", error.message, error.stack);
+    console.error("M-Pesa Callback Processing Error:", error.message);
   }
 
   res.sendStatus(200);
 };
 
-// Transaction status check endpoint with fallback query
+
 export const checkTransactionStatus = async (req, res) => {
   try {
     const { checkoutRequestId } = req.query;
-
     if (!checkoutRequestId) {
-      return res.status(400).json({
-        success: false,
-        message: "checkoutRequestId is required"
-      });
+      return res.status(400).json({ success: false, message: "checkoutRequestId is required" });
     }
 
     let transaction = await MpesaTransaction.findOne({ checkoutRequestID: checkoutRequestId });
-
     if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        message: "Transaction not found"
-      });
+      return res.status(404).json({ success: false, message: "Transaction not found" });
     }
 
-    // If transaction is still pending, query M-Pesa
     if (!transaction.status || transaction.status === "Pending") {
       try {
         const stkResponse = await queryMpesaTransactionStatus(checkoutRequestId);
@@ -189,21 +199,30 @@ export const checkTransactionStatus = async (req, res) => {
         transaction.status = stkResponse.ResultCode === 0 ? "Completed" : "Failed";
         transaction.mpesaResponse = {
           ...transaction.mpesaResponse,
-          realTimeQuery: stkResponse
+          realTimeQuery: stkResponse,
         };
         transaction.callbackReceivedAt = new Date();
 
         await transaction.save();
+
+        // Emit update via WebSocket
+        const io = req.app.get("io");
+        io.to(checkoutRequestId).emit("mpesa:statusUpdate", {
+          status: transaction.status,
+          message: stkResponse.ResultDesc,
+          data: transaction,
+        });
+
+        io.to(checkoutRequestId).emit("mpesa:cleanupRoom");
       } catch (queryErr) {
-        console.error("Error querying M-Pesa STK status:", queryErr.message);
+        console.error("STK Query Error:", queryErr.response?.data || queryErr.message);
       }
     }
 
-    // Format consistent frontend response
-    const response = {
-      success: transaction.status === 'Completed',
+    return res.json({
+      success: transaction.status === "Completed",
       status: transaction.status,
-      message: transaction.resultDescription || `Transaction is ${transaction.status}`,
+      message: transaction.resultDescription,
       transaction: {
         id: transaction._id,
         amount: transaction.amount,
@@ -212,29 +231,20 @@ export const checkTransactionStatus = async (req, res) => {
         mpesaReceiptNumber: transaction.mpesaReceiptNumber,
         transactionDate: transaction.transactionDate,
         resultCode: transaction.resultCode,
-        resultDescription: transaction.resultDescription
+        resultDescription: transaction.resultDescription,
       },
       rawData: {
         callback: transaction.rawCallback,
-        mpesaResponse: transaction.mpesaResponse
-      }
-    };
-
-    // Suggest action for failed payments
-    if (transaction.status === 'Failed') {
-      response.reason = transaction.resultDescription;
-      if (transaction.resultCode === 1) {
-        response.suggestedAction = "Please ensure you have sufficient balance in your M-Pesa account";
-      }
-    }
-
-    return res.json(response);
+        mpesaResponse: transaction.mpesaResponse,
+      },
+    });
   } catch (error) {
-    console.error("Transaction status check error:", error);
+    console.error("Check Status Error:", error.message);
     return res.status(500).json({
       success: false,
       message: "Error checking transaction status",
-      error: error.message
+      error: error.message,
     });
   }
 };
+
