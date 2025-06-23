@@ -2,6 +2,7 @@ import axios from "axios";
 import moment from "moment";
 import MpesaTransaction from "../models/mpesaModel.js";
 
+// Get M-Pesa Access Token
 const getMpesaToken = async () => {
   const auth = Buffer.from(
     `${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`
@@ -12,6 +13,32 @@ const getMpesaToken = async () => {
   });
 
   return res.data.access_token;
+};
+
+// Query Safaricom for real-time status
+const queryMpesaTransactionStatus = async (checkoutRequestID) => {
+  const accessToken = await getMpesaToken();
+  const timestamp = moment().format("YYYYMMDDHHmmss");
+  const password = Buffer.from(
+    `${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`
+  ).toString("base64");
+
+  const response = await axios.post(
+    `${process.env.MPESA_BASE_URL}/mpesa/stkpushquery/v1/query`,
+    {
+      BusinessShortCode: process.env.MPESA_SHORTCODE,
+      Password: password,
+      Timestamp: timestamp,
+      CheckoutRequestID: checkoutRequestID,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  return response.data;
 };
 
 // STK PUSH initiation with amount
@@ -62,7 +89,8 @@ export const initiateStkPush = async (req, res) => {
       amount,
       checkoutRequestID: response.data.CheckoutRequestID,
       requestPayload: req.body,
-      mpesaResponse: response.data
+      mpesaResponse: response.data,
+      status: "Pending"
     });
 
     return res.json({
@@ -82,7 +110,7 @@ export const initiateStkPush = async (req, res) => {
   }
 };
 
-// Callback handler
+// M-Pesa callback endpoint
 export const mpesaCallback = async (req, res) => {
   try {
     console.log("Received M-Pesa callback:", JSON.stringify(req.body, null, 2));
@@ -123,7 +151,6 @@ export const mpesaCallback = async (req, res) => {
 
     await transaction.save();
     console.log(`Transaction ${CheckoutRequestID} updated with status: ${transaction.status}`);
-
   } catch (error) {
     console.error("M-Pesa Callback Processing Error:", error.message, error.stack);
   }
@@ -131,7 +158,7 @@ export const mpesaCallback = async (req, res) => {
   res.sendStatus(200);
 };
 
-// Transaction status check endpoint
+// Transaction status check endpoint with fallback query
 export const checkTransactionStatus = async (req, res) => {
   try {
     const { checkoutRequestId } = req.query;
@@ -143,7 +170,7 @@ export const checkTransactionStatus = async (req, res) => {
       });
     }
 
-    const transaction = await MpesaTransaction.findOne({ checkoutRequestID: checkoutRequestId });
+    let transaction = await MpesaTransaction.findOne({ checkoutRequestID: checkoutRequestId });
 
     if (!transaction) {
       return res.status(404).json({
@@ -152,7 +179,27 @@ export const checkTransactionStatus = async (req, res) => {
       });
     }
 
-    // Format response based on transaction status
+    // If transaction is still pending, query M-Pesa
+    if (!transaction.status || transaction.status === "Pending") {
+      try {
+        const stkResponse = await queryMpesaTransactionStatus(checkoutRequestId);
+
+        transaction.resultCode = stkResponse.ResultCode;
+        transaction.resultDescription = stkResponse.ResultDesc;
+        transaction.status = stkResponse.ResultCode === 0 ? "Completed" : "Failed";
+        transaction.mpesaResponse = {
+          ...transaction.mpesaResponse,
+          realTimeQuery: stkResponse
+        };
+        transaction.callbackReceivedAt = new Date();
+
+        await transaction.save();
+      } catch (queryErr) {
+        console.error("Error querying M-Pesa STK status:", queryErr.message);
+      }
+    }
+
+    // Format consistent frontend response
     const response = {
       success: transaction.status === 'Completed',
       status: transaction.status,
@@ -173,7 +220,7 @@ export const checkTransactionStatus = async (req, res) => {
       }
     };
 
-    // Include additional details for failed transactions
+    // Suggest action for failed payments
     if (transaction.status === 'Failed') {
       response.reason = transaction.resultDescription;
       if (transaction.resultCode === 1) {
@@ -182,7 +229,6 @@ export const checkTransactionStatus = async (req, res) => {
     }
 
     return res.json(response);
-
   } catch (error) {
     console.error("Transaction status check error:", error);
     return res.status(500).json({
