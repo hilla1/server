@@ -11,6 +11,7 @@ import paypalRouter from "./routes/paypalRoutes.js";
 import stripeRouter from "./routes/stripeRoutes.js";
 import mpesaRouter from "./routes/mpesaRoutes.js";
 import exchangeRouter from "./routes/exchangeRoute.js";
+import fileRouter from "./routes/fileRoutes.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -31,5 +32,6 @@ app.use('/api/paypal', paypalRouter);
 app.use("/api/stripe", stripeRouter);
 app.use("/api/mpesa", mpesaRouter);
 app.use("/api/exchange", exchangeRouter);
+app.use("/api/file", fileRouter);
 
 app.listen(port, ()=> console.log(`Server running on port:${port}`));

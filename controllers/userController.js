@@ -5,7 +5,7 @@ export const getUserData = async (req, res)=>{
     try {
         const userId = req.userId;
 
-        const user = await userModel.findById(userId);
+        const user = await userModel.findById(userId);    
 
         if(!user){
             return res.json({success:false, message: 'User not found'});
@@ -15,7 +15,8 @@ export const getUserData = async (req, res)=>{
             name: user.name,
             email: user.email,
             role:req.userRole,
-            avatar:user.avatar,
+            avatar:user.avatar, 
+            phone:user.phone,
             isAccountVerified: user.isAccountVerified
         }});
         
@@ -42,19 +43,25 @@ export const getEmailByRole = async (req, res) => {
 
 
 export const updateProfile = async (req, res) => {
-  const { name, avatar } = req.body;
+  const { name, avatar, phone } = req.body;
   const userId = req.userId;
 
   if (!userId) return res.json({ success: false, message: 'Unauthorized' });
 
+  // Build update object only with defined fields
+  const updateFields = {};
+  if (name !== undefined) updateFields.name = name;
+  if (avatar !== undefined) updateFields.avatar = avatar;
+  if (phone !== undefined) updateFields.phone = phone;
+
   try {
     const updatedUser = await userModel.findByIdAndUpdate(
       userId,
-      { name, avatar },
+      { $set: updateFields },
       { new: true }
     );
 
-    return res.json({ success: true, message: 'Profile updated', user: updatedUser });
+    return res.json({ success: true, message: 'Profile updated'});
   } catch (error) {
     return res.json({ success: false, message: error.message });
   }
