@@ -12,10 +12,11 @@ export const getUserData = async (req, res)=>{
         }
 
         return res.json({success:true, userData: {
-            name: user.name,
+            name: user.name,  
             email: user.email,
             role:req.userRole,
             avatar:user.avatar, 
+            publicId:user.publicId,
             phone:user.phone,
             isAccountVerified: user.isAccountVerified
         }});
@@ -43,15 +44,16 @@ export const getEmailByRole = async (req, res) => {
 
 
 export const updateProfile = async (req, res) => {
-  const { name, avatar, phone } = req.body;
+  const { name, avatar, publicId, phone } = req.body;
   const userId = req.userId;
 
   if (!userId) return res.json({ success: false, message: 'Unauthorized' });
 
   // Build update object only with defined fields
   const updateFields = {};
-  if (name !== undefined) updateFields.name = name;
+  if (name !== undefined) updateFields.name = name;  
   if (avatar !== undefined) updateFields.avatar = avatar;
+  if (publicId !== undefined) updateFields.publicId = publicId;
   if (phone !== undefined) updateFields.phone = phone;
 
   try {

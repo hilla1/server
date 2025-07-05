@@ -22,6 +22,7 @@
     "google-auth-library": "^9.15.1",
     "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
+    "mime-types": "^3.0.1",
     "moment": "^2.30.1",
     "mongoose": "^8.15.1",
     "multer": "^2.0.1",

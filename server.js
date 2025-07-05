@@ -12,6 +12,7 @@ import stripeRouter from "./routes/stripeRoutes.js";
 import mpesaRouter from "./routes/mpesaRoutes.js";
 import exchangeRouter from "./routes/exchangeRoute.js";
 import fileRouter from "./routes/fileRoutes.js";
+import projectRouter from "./routes/projectRoutes.js";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -33,5 +34,6 @@ app.use("/api/stripe", stripeRouter);
 app.use("/api/mpesa", mpesaRouter);
 app.use("/api/exchange", exchangeRouter);
 app.use("/api/file", fileRouter);
+app.use("/api/project", projectRouter);
 
 app.listen(port, ()=> console.log(`Server running on port:${port}`));

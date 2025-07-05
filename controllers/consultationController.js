@@ -233,8 +233,8 @@ export const getConsultations = async (req, res) => {
 
     const consultations = await consultationModel
       .find(filter)
-      .populate('user', 'name email')        // Populate client info
-      .populate('handlers', 'name email');   // Populate consultant(s)
+      .populate('user', 'name email avatar')        // Populate client info
+      .populate('handlers', 'name email avatar');   // Populate consultant(s)
 
     return res.json({ success: true, consultations });
   } catch (error) {
