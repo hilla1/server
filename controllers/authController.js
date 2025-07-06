@@ -47,6 +47,7 @@ export const register = async (req, res)=>{
         await transporter.sendMail(mailOptions);
 
         return res.json({success: true, message: 'Account created succesfully'});
+        //return res.redirect(`${process.env.VITE_CLIENT_URL}/dashboard`);
         
     } catch (error) {
         return res.json({success:false, message: error.message});
@@ -83,6 +84,7 @@ export const login = async (req,res)=>{
         setAuthCookies(res, token);
 
         return res.json({success: true, message: 'Login successful'});
+        //return res.redirect(`${process.env.VITE_CLIENT_URL}/dashboard`);
 
     } catch (error) {
         return res.json({success: false, message:error.message });
