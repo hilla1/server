@@ -7,7 +7,7 @@ import { setAuthCookies } from '../utils/setAuthCookies.js';
 import { clearAuthCookies } from '../utils/clearAuthCookies.js';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
-const redirectURL = `${process.env.VITE_CLIENT_URL}/oauth/callback`;
+const redirectURL = `${process.env.BASE_URL}/auth/oauth/callback`;
 
 export const register = async (req, res)=>{
 
@@ -94,19 +94,21 @@ export const login = async (req,res)=>{
 export const googleOAuthRedirect = (req, res) => {
   const authorizeUrl = client.generateAuthUrl({
     access_type: 'offline',
+    prompt: 'consent', 
+    response_type: 'code',
     scope: [
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email',
     ],
     redirect_uri: redirectURL,
   });
-
+  
   res.redirect(authorizeUrl);
 };
 
 // Handle Google OAuth callback and login/register user
 export const googleOAuthCallback = async (req, res) => {
-  const { code } = req.body;
+  const { code } = req.query;
 
   if (!code) {
     return res.status(400).json({ success: false, message: 'Authorization code is required' });
@@ -171,10 +173,7 @@ export const googleOAuthCallback = async (req, res) => {
 
     setAuthCookies(res, token);
 
-    return res.status(200).json({
-      success: true,
-      message: isNewUser ? 'Account created via Google' : 'Login successful via Google',
-    });
+    return res.redirect(`${process.env.VITE_CLIENT_URL}/dashboard`);
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

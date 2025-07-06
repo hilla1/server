@@ -13,6 +13,6 @@ authRouter.post('/is-auth',userAuth, isAuthenticated);
 authRouter.post('/send-reset-otp',sendResetOtp);
 authRouter.post('/reset-password',resetPassword);
 authRouter.get('/google', googleOAuthRedirect); 
-authRouter.post('/oauth/callback', googleOAuthCallback); 
+authRouter.get('/oauth/callback', googleOAuthCallback); 
 
 export default authRouter;
