@@ -58,3 +58,4 @@ Thumbs.db
 
 # Optional: ignore test output
 test-output/
+.vercel

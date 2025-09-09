@@ -113,7 +113,8 @@ export const googleOAuthCallback = async (req, res) => {
   const { code } = req.query;
 
   if (!code) {
-    return res.status(400).json({ success: false, message: 'Authorization code is required' });
+    //return res.status(400).json({ success: false, message: 'Authorization code is required' });
+    return res.redirect(`${process.env.VITE_CLIENT_URL}`);
   }
 
   try {
