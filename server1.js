@@ -16,14 +16,24 @@ import fileRouter from "./routes/fileRoutes.js";
 import projectRouter from "./routes/projectRoutes.js";
 
 const app = express();
-connectDB();
 
-const allowedOrigins = [process.env.VITE_CLIENT_URL];
+// Connect to MongoDB with error handling
+try {
+  connectDB();
+} catch (error) {
+  console.error("Failed to connect to MongoDB:", error.message);
+}
+
+const allowedOrigins = [process.env.VITE_CLIENT_URL || "http://localhost:3000"];
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+
+// Handle root and favicon requests
+app.get("/", (req, res) => res.send("API is running"));
+app.get("/favicon.ico", (req, res) => res.status(204).end());
 
 // API Endpoints
 app.use('/api/auth', authRouter);
