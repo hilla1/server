@@ -24,7 +24,7 @@ try {
   console.error("Failed to connect to MongoDB:", error.message);
 }
 
-const allowedOrigins = [process.env.VITE_CLIENT_URL || "http://localhost:3000"];
+const allowedOrigins = [process.env.VITE_CLIENT_URL];
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
