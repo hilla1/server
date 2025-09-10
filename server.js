@@ -21,7 +21,7 @@ const app = express();
 try {
   connectDB();
 } catch (error) {
-  console.error("Failed to connect to MongoDB:", error.message);
+  console.error("Failed to connect to DB:", error.message);
 }
 
 const allowedOrigins = [process.env.VITE_CLIENT_URL];
