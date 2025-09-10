@@ -15,8 +15,18 @@ import fileRouter from "./routes/fileRoutes.js";
 import projectRouter from "./routes/projectRoutes.js";
 
 const app = express();
+<<<<<<< HEAD
 const port = process.env.PORT || 5000;
 connectDB();
+=======
+
+// Connect to MongoDB with error handling
+try {
+  connectDB();
+} catch (error) {
+  console.error("Failed to connect to DB:", error.message);
+}
+>>>>>>> 09382d0107eab189e58739d23e023a7e74afa7a4
 
 const allowedOrigins = [process.env.VITE_CLIENT_URL];
 
@@ -36,4 +46,9 @@ app.use("/api/exchange", exchangeRouter);
 app.use("/api/file", fileRouter);
 app.use("/api/project", projectRouter);
 
+<<<<<<< HEAD
 app.listen(port, ()=> console.log(`Server running on port:${port}`));
+=======
+// Export for Vercel serverless
+export const handler = serverless(app);
+>>>>>>> 09382d0107eab189e58739d23e023a7e74afa7a4
