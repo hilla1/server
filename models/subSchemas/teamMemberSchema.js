@@ -1,3 +1,4 @@
+// subSchemas/teamMemberSchema.js
 import mongoose from 'mongoose';
 
 const teamMemberSchema = new mongoose.Schema({

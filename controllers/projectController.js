@@ -1,4 +1,37 @@
+// controllers/projectController.js
 import projectModel from '../models/projectModel.js';
+
+// Helper to get default phases based on projectType
+const getDefaultPhases = (projectType) => {
+  switch (projectType) {
+    case 'logo_design':
+      return [
+        { name: 'Research & Concept', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Design Iteration', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Finalization', status: 'pending', tasks: [], milestones: [] },
+      ];
+    case 'branding':
+      return [
+        { name: 'Brand Strategy', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Visual Identity', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Guidelines Development', status: 'pending', tasks: [], milestones: [] },
+      ];
+    case 'web_development':
+      return [
+        { name: 'Planning & Wireframing', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Development', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Testing & Deployment', status: 'pending', tasks: [], milestones: [] },
+      ];
+    case 'app_development':
+      return [
+        { name: 'Requirement Gathering', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Development', status: 'pending', tasks: [], milestones: [] },
+        { name: 'Testing & Launch', status: 'pending', tasks: [], milestones: [] },
+      ];
+    default:
+      return [{ name: 'Initial Phase', status: 'pending', tasks: [], milestones: [] }];
+  }
+};
 
 // Create Project
 export const createProject = async (req, res) => {
@@ -9,7 +42,8 @@ export const createProject = async (req, res) => {
   }
 
   try {
-    const newProjectData = { ...req.body, client: userId };
+    const defaultPhases = getDefaultPhases(req.body.projectType);
+    const newProjectData = { ...req.body, client: userId, phases: defaultPhases };
     const project = await projectModel.create(newProjectData);
 
     return res.status(201).json({
@@ -44,7 +78,7 @@ export const updateProject = async (req, res) => {
     const updatedProject = await projectModel.findByIdAndUpdate(
       projectId,
       { $set: req.body },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     return res.json({
@@ -57,7 +91,7 @@ export const updateProject = async (req, res) => {
   }
 };
 
-// Get All Projects (Populating client)
+// Get All Projects
 export const getProjects = async (req, res) => {
   const userId = req.userId;
   const role = req.userRole;
@@ -92,7 +126,7 @@ export const getProjects = async (req, res) => {
   }
 };
 
-// Get Project by ID (Populating client)
+// Get Project by ID
 export const getProjectById = async (req, res) => {
   const { projectId } = req.params;
   const userId = req.userId;
@@ -116,6 +150,36 @@ export const getProjectById = async (req, res) => {
 
     if (role === 'admin' || isOwner || (role === 'consultant' && isTeamMember)) {
       return res.json({ success: true, project });
+    } else {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Delete Project
+export const deleteProject = async (req, res) => {
+  const { projectId } = req.params;
+  const userId = req.userId;
+  const role = req.userRole;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
+  try {
+    const project = await projectModel.findById(projectId);
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    const isOwner = project.client._id.toString() === userId;
+
+    if (role === 'admin' || isOwner) {
+      await projectModel.findByIdAndDelete(projectId);
+      return res.json({ success: true, message: 'Project deleted successfully' });
     } else {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }

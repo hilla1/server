@@ -1,3 +1,4 @@
+// subSchemas/messageSchema.js
 import mongoose from 'mongoose';
 import attachmentSchema from './attachmentSchema.js';
 

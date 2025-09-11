@@ -1,3 +1,4 @@
+// subSchemas/deliverableSchema.js
 import mongoose from 'mongoose';
 
 const deliverableSchema = new mongoose.Schema({
@@ -15,6 +16,7 @@ const deliverableSchema = new mongoose.Schema({
     default: 'pending',
   },
   url: { type: String },
+  publicId: { type: String },
 }, { _id: false });
 
 export default deliverableSchema;
