@@ -23,12 +23,17 @@ const allowedOrigins = [process.env.VITE_CLIENT_URL];
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors({origin:allowedOrigins, credentials:true}));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
-// Api Endpoints
+// Health Endpoint for UptimeRobot
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// API Endpoints
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
-app.use('/api/consultation', consultationRouter);        
+app.use('/api/consultation', consultationRouter);
 app.use('/api/paypal', paypalRouter);
 app.use("/api/stripe", stripeRouter);
 app.use("/api/mpesa", mpesaRouter);
@@ -36,4 +41,4 @@ app.use("/api/exchange", exchangeRouter);
 app.use("/api/file", fileRouter);
 app.use("/api/project", projectRouter);
 
-app.listen(port, ()=> console.log(`Server running on port:${port}`));
+app.listen(port, () => console.log(`Server running on port:${port}`));
